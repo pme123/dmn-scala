@@ -1,11 +1,7 @@
 package org.camunda.dmn.parser
 
-import org.camunda.bpm.model.dmn.DmnModelInstance
+import org.camunda.bpm.model.dmn.{BuiltinAggregator, DmnModelInstance, HitPolicy}
 import org.camunda.feel.ParsedExpression
-import scala.collection.JavaConverters._
-import org.camunda.bpm.model.dmn.instance.Decision
-import org.camunda.bpm.model.dmn.HitPolicy
-import org.camunda.bpm.model.dmn.BuiltinAggregator
 
 case class ParsedDmn(model: DmnModelInstance,
                      decisions: Iterable[ParsedDecision]) {

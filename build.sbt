@@ -1,7 +1,7 @@
 val shared = Seq(
   organization := "org.camunda.bpm.extension.dmn.scala",
   version := "1.4.0-SNAPSHOT",
-  scalaVersion := "2.12.4",
+  scalaVersion := "2.13.3",
   resolvers += Resolver.mavenLocal,
   resolvers += Classpaths.typesafeReleases,
   resolvers += "camunda-bpm-nexus" at "https://app.camunda.com/nexus/content/groups/public",
@@ -11,25 +11,25 @@ val shared = Seq(
 val commonDependencies = Seq(
   "org.slf4j" % "slf4j-api" % "1.7.25",
   "junit" % "junit" % "4.11" % "test",
-  "org.scalatest" % "scalatest_2.12" % "3.0.4" % "test",
+  "org.scalatest" %% "scalatest" % "3.0.8" % "test",
   "org.apache.logging.log4j" % "log4j-api" % "2.9.0" % "test",
   "org.apache.logging.log4j" % "log4j-core" % "2.9.0" % "test",
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.9.0" % "test"
 )
 
-val feelVersion = "1.8.0"
-val camundaVersion = "7.11.0"
-val zeebeVersion = "0.20.0"
-val scalatraVersion = "2.6.2"
+val feelVersion = "1.10.1"
+val camundaVersion = "7.13.0"
+val zeebeVersion = "0.24.3"
+val scalatraVersion = "2.7.0"
 
 lazy val root = (project in file("."))
   .settings(shared)
   .aggregate(engine,
-             camundaPlugin,
-             standaloneEngine,
-             engineRest,
-             zeebeWorker,
-             benchmark)
+    camundaPlugin,
+    standaloneEngine,
+    engineRest,
+    zeebeWorker,
+    benchmark)
 
 lazy val engine = (project in file("dmn-engine"))
   .settings(
@@ -83,7 +83,7 @@ lazy val engineRest = (project in file("engine-rest"))
     libraryDependencies ++= Seq(
       "org.scalatra" %% "scalatra" % scalatraVersion,
       "org.scalatra" %% "scalatra-json" % scalatraVersion,
-      "org.json4s" %% "json4s-jackson" % "3.5.2",
+      "org.json4s" %% "json4s-jackson" % "3.6.9",
       "org.eclipse.jetty" % "jetty-webapp" % "9.4.8.v20171121" % "container;compile",
       "javax.servlet" % "javax.servlet-api" % "3.1.0" % "provided",
       "org.scalatra" %% "scalatra-scalatest" % scalatraVersion % "test"
@@ -103,6 +103,7 @@ lazy val zeebeWorker = (project in file("zeebe-worker"))
     libraryDependencies ++= commonDependencies,
     libraryDependencies ++= Seq(
       "io.zeebe" % "zeebe-client-java" % zeebeVersion,
+      "org.apache.commons" % "commons-lang3" % "3.11",
       "org.apache.logging.log4j" % "log4j-api" % "2.9.0",
       "org.apache.logging.log4j" % "log4j-core" % "2.9.0",
       "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.9.0",

@@ -1,37 +1,21 @@
 package org.camunda.dmn.camunda.plugin
 
-import scala.collection.JavaConverters._
-
-import org.camunda.bpm.dmn.engine.delegate.DmnDecisionEvaluationListener
 import org.camunda.bpm.dmn.engine.DmnDecision
-import org.camunda.bpm.dmn.engine.impl.delegate.DmnDecisionEvaluationEventImpl
-import org.camunda.bpm.dmn.engine.delegate.DmnDecisionLogicEvaluationEvent
-import org.camunda.dmn.DmnEngine._
-import org.camunda.bpm.dmn.engine.impl.delegate.DmnDecisionTableEvaluationEventImpl
-import org.camunda.bpm.dmn.engine.delegate.DmnEvaluatedInput
-import org.camunda.bpm.dmn.engine.impl.delegate.DmnEvaluatedInputImpl
-import org.camunda.bpm.dmn.engine.impl.DmnDecisionTableInputImpl
-import org.camunda.dmn.parser.ParsedDmn
-import org.camunda.bpm.engine.variable.impl.value.UntypedValueImpl
+import org.camunda.bpm.dmn.engine.delegate._
+import org.camunda.bpm.dmn.engine.impl.delegate._
+import org.camunda.bpm.dmn.engine.impl.{DmnDecisionTableInputImpl, DmnDecisionTableOutputImpl, DmnDecisionTableRuleImpl}
+import org.camunda.bpm.engine.ProcessEngineException
 import org.camunda.bpm.engine.variable.Variables
-import org.camunda.bpm.model.bpmn.instance.camunda.CamundaValue
+import org.camunda.bpm.engine.variable.value.TypedValue
+import org.camunda.dmn.Audit._
+import org.camunda.dmn.parser.ParsedDecisionTable
 import org.camunda.feel.integration.CamundaValueMapper
 import org.camunda.feel.interpreter.Val
-import org.camunda.bpm.engine.variable.value.TypedValue
-import org.camunda.dmn.parser.ParsedDecisionTable
-import org.camunda.bpm.dmn.engine.impl.DmnDecisionTableRuleImpl
-import org.camunda.bpm.dmn.engine.impl.delegate.DmnEvaluatedDecisionRuleImpl
-import org.camunda.bpm.dmn.engine.delegate.DmnEvaluatedDecisionRule
-import org.camunda.bpm.dmn.engine.impl.delegate.DmnEvaluatedOutputImpl
-import org.camunda.bpm.dmn.engine.delegate.DmnEvaluatedOutput
-import org.camunda.bpm.dmn.engine.impl.DmnDecisionTableOutputImpl
-import org.camunda.bpm.dmn.engine.impl.delegate.DmnDecisionLiteralExpressionEvaluationEventImpl
-import org.camunda.bpm.engine.ProcessEngine
-import org.camunda.bpm.engine.ProcessEngineException
-import org.camunda.dmn.Audit._
+
+import scala.jdk.CollectionConverters._
 
 class CamundaDmnHistoryListener(listener: () => DmnDecisionEvaluationListener)
-    extends AuditLogListener {
+  extends AuditLogListener {
 
   // The Camunda history event producer expect decisions of type DmnDecision.
   // Since this is not part of the DMN engine, I need to pass it from the evaluation.
@@ -58,7 +42,7 @@ class CamundaDmnHistoryListener(listener: () => DmnDecisionEvaluationListener)
   }
 
   private def getDecisionsById(
-      decision: DmnDecision): Map[String, DmnDecision] = {
+                                decision: DmnDecision): Map[String, DmnDecision] = {
 
     decision.getRequiredDecisions.asScala
       .flatMap(getDecisionsById)
@@ -67,7 +51,7 @@ class CamundaDmnHistoryListener(listener: () => DmnDecisionEvaluationListener)
 
   // Transforming the audit log from the DMN engine to Camunda history events.
 
-  override def onEval(log: AuditLog) {
+  override def onEval(log: AuditLog): Unit = {
     val evalEvent = new DmnDecisionEvaluationEventImpl();
 
     val rootDecision = decisionById(log.rootEntry.id).getOrElse {
@@ -92,8 +76,8 @@ class CamundaDmnHistoryListener(listener: () => DmnDecisionEvaluationListener)
   }
 
   private def createEvaluationEvent(
-      decision: DmnDecision,
-      entry: AuditLogEntry): DmnDecisionLogicEvaluationEvent = {
+                                     decision: DmnDecision,
+                                     entry: AuditLogEntry): DmnDecisionLogicEvaluationEvent = {
 
     entry.result match {
       case decisionTableResult: DecisionTableEvaluationResult =>
@@ -103,10 +87,10 @@ class CamundaDmnHistoryListener(listener: () => DmnDecisionEvaluationListener)
   }
 
   private def createDecisionTableEvaluationEvent(
-      decision: DmnDecision,
-      entry: AuditLogEntry,
-      evalDecisionTable: DecisionTableEvaluationResult)
-    : DmnDecisionLogicEvaluationEvent = {
+                                                  decision: DmnDecision,
+                                                  entry: AuditLogEntry,
+                                                  evalDecisionTable: DecisionTableEvaluationResult)
+  : DmnDecisionLogicEvaluationEvent = {
 
     val evalEvent = new DmnDecisionTableEvaluationEventImpl()
     evalEvent.setDecisionTable(decision)
@@ -121,7 +105,7 @@ class CamundaDmnHistoryListener(listener: () => DmnDecisionEvaluationListener)
         .asJava)
 
     val decisionTable = entry.decisionLogic.asInstanceOf[ParsedDecisionTable]
-    Option(decisionTable.aggregation).map { _ =>
+    Option(decisionTable.aggregation).foreach { _ =>
       evalEvent.setCollectResultValue(toTypedValue(evalDecisionTable.result))
       evalEvent.setCollectResultName(entry.id)
     }
@@ -133,7 +117,7 @@ class CamundaDmnHistoryListener(listener: () => DmnDecisionEvaluationListener)
   }
 
   private def createDecisionTableInputEvent(
-      evalInput: EvaluatedInput): DmnEvaluatedInput = {
+                                             evalInput: EvaluatedInput): DmnEvaluatedInput = {
 
     val input = new DmnDecisionTableInputImpl()
     input.setId(evalInput.input.id)
@@ -146,7 +130,7 @@ class CamundaDmnHistoryListener(listener: () => DmnDecisionEvaluationListener)
   }
 
   private def createDecitionTableRuleEvent(
-      evalRule: EvaluatedRule): DmnEvaluatedDecisionRule = {
+                                            evalRule: EvaluatedRule): DmnEvaluatedDecisionRule = {
     val rule = new DmnDecisionTableRuleImpl()
     rule.setId(evalRule.rule.id)
 
@@ -158,7 +142,7 @@ class CamundaDmnHistoryListener(listener: () => DmnDecisionEvaluationListener)
   }
 
   private def createDecisionTableOutputEvent(
-      evalOutput: EvaluatedOutput): (String, DmnEvaluatedOutput) = {
+                                              evalOutput: EvaluatedOutput): (String, DmnEvaluatedOutput) = {
 
     val dmnOutput = new DmnDecisionTableOutputImpl()
     dmnOutput.setId(evalOutput.output.id)
@@ -172,9 +156,9 @@ class CamundaDmnHistoryListener(listener: () => DmnDecisionEvaluationListener)
   }
 
   private def createMiscEvaluationEvent(
-      decision: DmnDecision,
-      entry: AuditLogEntry,
-      evalResult: EvaluationResult): DmnDecisionLogicEvaluationEvent = {
+                                         decision: DmnDecision,
+                                         entry: AuditLogEntry,
+                                         evalResult: EvaluationResult): DmnDecisionLogicEvaluationEvent = {
 
     val evalEvent = new DmnDecisionLiteralExpressionEvaluationEventImpl()
 
@@ -189,12 +173,13 @@ class CamundaDmnHistoryListener(listener: () => DmnDecisionEvaluationListener)
   val valueMapper = new CamundaValueMapper
 
   private def toTypedValue(value: Val): TypedValue =
-    valueMapper.unpackVal(value) match {
-      case value: Long    => Variables.longValue(value)
-      case value: Double  => Variables.doubleValue(value)
-      case value: String  => Variables.stringValue(value)
-      case value: Boolean => Variables.booleanValue(value)
-      case value          => Variables.untypedValue(value)
+    valueMapper.unpackVal(value, _ => value) match {
+      case Some(value: Long) => Variables.longValue(value)
+      case Some(value: Double) => Variables.doubleValue(value)
+      case Some(value: String) => Variables.stringValue(value)
+      case Some(value: Boolean) => Variables.booleanValue(value)
+      case Some(value) => Variables.untypedValue(value)
+      case None => Variables.untypedNullValue()
     }
 
 }

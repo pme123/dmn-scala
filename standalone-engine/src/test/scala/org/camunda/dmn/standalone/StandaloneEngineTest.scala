@@ -10,10 +10,10 @@ import java.io.FileInputStream
 
 class StandaloneEngineTest extends FlatSpec with Matchers with BeforeAndAfter {
 
-  val repository =
-    Paths.get(getClass.getResource("/repository").toURI()).toString
-  val emptyRepository =
-    Paths.get(getClass.getResource("/empty").toURI()).toString
+  val repository: String =
+    Paths.get(getClass.getResource("/repository").toURI).toString
+  val emptyRepository: String =
+    Paths.get(getClass.getResource("/empty").toURI).toString
 
   after {
     Files.list(Paths.get(emptyRepository)).forEach(p => Files.delete(p))

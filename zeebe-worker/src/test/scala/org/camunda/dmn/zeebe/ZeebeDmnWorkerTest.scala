@@ -1,41 +1,32 @@
-package org.camunda.dmn.standalone
+package org.camunda.dmn.zeebe
 
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
-import org.camunda.dmn.DmnEngine._
 import java.nio.file.Paths
-import org.scalatest.BeforeAndAfter
-import java.nio.file.Files
-import java.io.FileInputStream
-import org.scalatest.junit.JUnitSuite
-import scala.annotation.meta.getter
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import io.zeebe.test.ZeebeTestRule
-import io.zeebe.model.bpmn.Bpmn
-import java.util.Properties
-import org.camunda.dmn.zeebe.ZeebeDmnWorkerApplication
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
-import org.junit.After
-import java.io.ByteArrayInputStream
+
 import io.zeebe.client.ZeebeClient
+import io.zeebe.model.bpmn.Bpmn
+import io.zeebe.test.ZeebeTestRule
 import io.zeebe.test.util.record.RecordingExporter
+import org.junit.{After, Before, Rule, Test}
+import org.scalatest.Matchers
+import org.scalatestplus.junit.JUnitSuite
+
+import scala.annotation.meta.getter
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class ZeebeDmnWorkerTest extends JUnitSuite with Matchers {
 
-  val repository =
-    Paths.get(getClass.getResource("/repository").toURI()).toString
+  val repository: String =
+    Paths.get(getClass.getResource("/repository").toURI).toString
 
-  @(Rule @getter)
+  @(Rule@getter)
   val testRule = new ZeebeTestRule()
 
   var worker: ZeebeDmnWorkerApplication = _
 
   var client: ZeebeClient = _
 
-  @Before def init {
+  @Before def init(): Unit = {
 
     worker = new ZeebeDmnWorkerApplication(
       repository,
@@ -49,7 +40,7 @@ class ZeebeDmnWorkerTest extends JUnitSuite with Matchers {
       .createExecutableProcess("wf")
       .startEvent()
       .serviceTask("dmn-task")
-      .zeebeTaskType("DMN")
+      .zeebeJobType("DMN")
       .zeebeTaskHeader("decisionRef", "discount")
       .endEvent()
       .done()
@@ -63,13 +54,13 @@ class ZeebeDmnWorkerTest extends JUnitSuite with Matchers {
       .join()
   }
 
-  @After def cleanUp {
+  @After def cleanUp():Unit = {
     worker.stop
 
     RecordingExporter.reset()
   }
 
-  @Test def shouldReturnDecisionResult {
+  @Test def shouldReturnDecisionResult():Unit = {
 
     val workflowInstance = client
       .newCreateInstanceCommand()
@@ -81,10 +72,10 @@ class ZeebeDmnWorkerTest extends JUnitSuite with Matchers {
 
     ZeebeTestRule
       .assertThat(workflowInstance)
-      .hasVariable("result", 0.15);
+      .hasVariable("result", 0.15)
   }
 
-  @Test def shouldReturnNilResult {
+  @Test def shouldReturnNilResult(): Unit = {
 
     val workflowInstance = client
       .newCreateInstanceCommand()
@@ -96,6 +87,6 @@ class ZeebeDmnWorkerTest extends JUnitSuite with Matchers {
 
     ZeebeTestRule
       .assertThat(workflowInstance)
-      .hasVariable("result", null);
+      .hasVariable("result", null)
   }
 }

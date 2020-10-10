@@ -7,7 +7,7 @@ object Audit {
 
   trait AuditLogListener {
 
-    def onEval(log: AuditLog)
+    def onEval(log: AuditLog): Unit
   }
 
   case class AuditLog(dmn: ParsedDmn, entries: List[AuditLogEntry]) {

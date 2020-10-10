@@ -1,22 +1,14 @@
 package org.camunda.dmn.rest
 
-import org.scalatra._
-import org.json4s.{DefaultFormats, Formats}
-import org.scalatra.json._
-import org.scalatra.servlet.{
-  FileUploadSupport,
-  MultipartConfig,
-  SizeConstraintExceededException
-}
-import org.camunda.dmn.DmnEngine
 import org.camunda.dmn.DmnEngine._
-import org.camunda.dmn.standalone.StandaloneEngine
-import java.nio.file.Paths
-import org.scalatra.servlet.FileItem
-import org.camunda.dmn.standalone.DeployedDecision
+import org.camunda.dmn.standalone.{DeployedDecision, StandaloneEngine}
+import org.json4s.{DefaultFormats, Formats}
+import org.scalatra._
+import org.scalatra.json._
+import org.scalatra.servlet.{FileItem, FileUploadSupport, MultipartConfig}
 
 class DmnEngineRestServlet(engine: StandaloneEngine)
-    extends ScalatraServlet
+  extends ScalatraServlet
     with JacksonJsonSupport
     with FileUploadSupport {
 
@@ -29,8 +21,10 @@ class DmnEngineRestServlet(engine: StandaloneEngine)
 
   // JSON data objects
   case class Decision(id: String, name: String, resource: String)
+
   case class DeploymentResult(deployedDecisions: Iterable[Decision],
                               failures: Iterable[Failure])
+
   case class DecisionEvalResult(result: Any)
 
   // response is JSON
@@ -50,24 +44,22 @@ class DmnEngineRestServlet(engine: StandaloneEngine)
     val variables = parsedBody.extract[Map[String, Any]]
 
     engine.evalDecisionById(id, variables) match {
-      case Left(failure)    => BadRequest(failure)
+      case Left(failure) => BadRequest(failure)
       case Right(NilResult) => DecisionEvalResult(null)
       case Right(Result(r)) => DecisionEvalResult(r)
     }
   }
 
   post("/decisions") {
-    val result = fileParams.map {
-      case (name: String, file: FileItem) => {
+    val result = fileMultiParams.toMap.map {
+      case (name: String, file: FileItem) =>
         engine
           .insertDecisions(file.getInputStream, name)
-          .right
           .map(_.map(decisionDto))
-      }
     }
 
-    val deployedDecisions = result.filter(_.isRight).map(_.right.get).flatten
-    val failures = result.filter(_.isLeft).map(_.left.get)
+    val deployedDecisions = result.filter(_.isRight).flatMap(_.toSeq.flatten)
+    val failures = result.filter(_.isLeft).flatMap(_.left.toSeq)
 
     DeploymentResult(deployedDecisions, failures)
   }
@@ -76,7 +68,7 @@ class DmnEngineRestServlet(engine: StandaloneEngine)
     val resource = params("resource")
 
     engine.removeResource(resource) match {
-      case Left(failure)           => BadRequest(failure)
+      case Left(failure) => BadRequest(failure)
       case Right(removedDecisions) => removedDecisions.map(decisionDto)
     }
   }

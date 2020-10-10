@@ -1,50 +1,19 @@
 package org.camunda.dmn
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable.{ListBuffer => mutableList}
-import scala.reflect.{ClassTag, classTag}
-
 import java.io.InputStream
 import java.util.ServiceLoader
 
-import org.camunda.dmn.FunctionalHelper._
-import org.camunda.dmn.parser._
+import org.camunda.dmn.Audit.{AuditLog, AuditLogEntry, AuditLogListener, EvaluationResult}
 import org.camunda.dmn.evaluation._
-import org.camunda.bpm.model.dmn._
-import org.camunda.bpm.model.dmn.instance.{
-  Decision,
-  DecisionTable,
-  Expression,
-  BusinessKnowledgeModel,
-  LiteralExpression
-}
-import org.camunda.bpm.model.dmn.instance.{
-  Invocation,
-  Binding,
-  FormalParameter,
-  Context
-}
-import org.camunda.bpm.model.dmn.instance.{
-  List => DmnList,
-  Relation,
-  FunctionDefinition
-}
-import org.camunda.feel._
-import org.camunda.feel.{FeelEngine, ParsedExpression}
-import org.camunda.feel.interpreter.{
-  Val,
-  ValNull,
-  FunctionProvider,
-  ValueMapper,
-  DefaultValueMapper
-}
-import org.camunda.feel.spi.{CustomValueMapper, CustomFunctionProvider}
-import org.camunda.dmn.Audit.{
-  AuditLog,
-  AuditLogEntry,
-  AuditLogListener,
-  EvaluationResult
-}
+import org.camunda.dmn.parser._
+import org.camunda.feel.FeelEngine
+import org.camunda.feel.interpreter.ValueMapper.CompositeValueMapper
+import org.camunda.feel.interpreter.{FunctionProvider, Val, ValNull, ValueMapper}
+import org.camunda.feel.spi.{CustomFunctionProvider, CustomValueMapper}
+
+import scala.collection.mutable.{ListBuffer => mutableList}
+import scala.jdk.CollectionConverters._
+import scala.reflect.{ClassTag, classTag}
 
 object DmnEngine {
 
@@ -66,14 +35,14 @@ object DmnEngine {
                          variables: Map[String, Any],
                          currentElement: ParsedDecisionLogicContainer,
                          auditLog: mutableList[AuditLogEntry] =
-                           mutableList.empty) {
+                         mutableList.empty) {
 
-    def audit(decisionLogic: ParsedDecisionLogic, result: EvaluationResult) {
+    def audit(decisionLogic: ParsedDecisionLogic, result: EvaluationResult): Any = {
       if (decisionLogic == currentElement.logic) {
         auditLog += AuditLogEntry(id = currentElement.id,
-                                  name = currentElement.name,
-                                  decisionLogic = decisionLogic,
-                                  result = result)
+          name = currentElement.name,
+          decisionLogic = decisionLogic,
+          result = result)
       }
     }
 
@@ -85,16 +54,15 @@ object DmnEngine {
 }
 
 class DmnEngine(configuration: DmnEngine.Configuration =
-                  DmnEngine.Configuration(),
+                DmnEngine.Configuration(),
                 auditLogListeners: List[AuditLogListener] = List.empty) {
 
   import DmnEngine._
 
-  val valueMapper = loadValueMapper()
+  val valueMapper: ValueMapper = loadValueMapper()
 
   val feelEngine = new FeelEngine(functionProvider = loadFunctionProvider(),
-                                  valueMapper =
-                                    new NoUnpackValueMapper(valueMapper))
+    valueMapper = new NoUnpackValueMapper(valueMapper))
 
   val parser = new DmnParser(
     configuration = configuration,
@@ -105,8 +73,8 @@ class DmnEngine(configuration: DmnEngine.Configuration =
         .map(_.message)
   )
 
-  val decisionEval = new DecisionEvaluator(eval = this.evalExpression,
-                                           evalBkm = bkmEval.createFunction)
+  lazy val decisionEval = new DecisionEvaluator(eval = this.evalExpression,
+    evalBkm = bkmEval.createFunction)
 
   val literalExpressionEval = new LiteralExpressionEvaluator(feelEngine)
 
@@ -133,7 +101,7 @@ class DmnEngine(configuration: DmnEngine.Configuration =
   def eval(stream: InputStream,
            decisionId: String,
            context: Map[String, Any]): Either[Failure, EvalResult] = {
-    parse(stream).right.flatMap(parsedDmn =>
+    parse(stream).flatMap(parsedDmn =>
       eval(parsedDmn, decisionId, context))
   }
 
@@ -163,39 +131,38 @@ class DmnEngine(configuration: DmnEngine.Configuration =
   ///// Java public API
 
   def eval(
-      stream: InputStream,
-      decisionId: String,
-      context: java.util.Map[String, Object]): Either[Failure, EvalResult] =
+            stream: InputStream,
+            decisionId: String,
+            context: java.util.Map[String, Object]): Either[Failure, EvalResult] =
     eval(stream, decisionId, context.asScala.toMap)
 
   def eval(
-      dmn: ParsedDmn,
-      decisionId: String,
-      variables: java.util.Map[String, Object]): Either[Failure, EvalResult] =
+            dmn: ParsedDmn,
+            decisionId: String,
+            variables: java.util.Map[String, Object]): Either[Failure, EvalResult] =
     eval(dmn, decisionId, variables.asScala.toMap)
 
   def evalByName(
-      dmn: ParsedDmn,
-      decisionName: String,
-      variables: java.util.Map[String, Object]): Either[Failure, EvalResult] =
+                  dmn: ParsedDmn,
+                  decisionName: String,
+                  variables: java.util.Map[String, Object]): Either[Failure, EvalResult] =
     evalByName(dmn, decisionName, variables.asScala.toMap)
 
   ///// internal
 
   private def evalDecision(
-      decision: ParsedDecision,
-      context: EvalContext): Either[Failure, EvalResult] = {
+                            decision: ParsedDecision,
+                            context: EvalContext): Either[Failure, EvalResult] = {
     decisionEval
       .eval(decision, context)
-      .right
       .map(result => {
-        val log = new AuditLog(context.dmn, context.auditLog.toList)
+        val log = AuditLog(context.dmn, context.auditLog.toList)
 
-        auditLogListeners.map(_.onEval(log))
+        auditLogListeners.foreach(_.onEval(log))
 
         result match {
           case ValNull => NilResult
-          case result  => Result(valueMapper.unpackVal(result))
+          case result => Result(valueMapper.unpackVal(result))
         }
       })
   }
@@ -204,11 +171,11 @@ class DmnEngine(configuration: DmnEngine.Configuration =
                              context: EvalContext): Either[Failure, Val] = {
     expression match {
       case dt: ParsedDecisionTable => decisionTableEval.eval(dt, context)
-      case inv: ParsedInvocation   => invocationEval.eval(inv, context)
+      case inv: ParsedInvocation => invocationEval.eval(inv, context)
       case le: ParsedLiteralExpression =>
         literalExpressionEval.evalExpression(le, context)
-      case c: ParsedContext    => contextEval.eval(c, context)
-      case l: ParsedList       => listEval.eval(l, context)
+      case c: ParsedContext => contextEval.eval(c, context)
+      case l: ParsedList => listEval.eval(l, context)
       case rel: ParsedRelation => relationEval.eval(rel, context)
       case f: ParsedFunctionDefinition =>
         functionDefinitionEval.eval(f, context)
@@ -219,31 +186,27 @@ class DmnEngine(configuration: DmnEngine.Configuration =
 
   private def loadValueMapper(): ValueMapper = {
     loadServiceProvider[CustomValueMapper]() match {
-      case Nil => DefaultValueMapper.instance
-      case m :: Nil => {
+      case Nil => ValueMapper.defaultValueMapper
+      case m :: Nil =>
         logger.info("Found custom value mapper: {}", m)
-        m
-      }
-      case mappers => {
+        CompositeValueMapper(List(m))
+      case mappers =>
         logger.warn(
           "Found more than one custom value mapper: {}. Use the first one.",
           mappers)
-        mappers.head
-      }
+        CompositeValueMapper(mappers)
     }
   }
 
   private def loadFunctionProvider(): FunctionProvider = {
     loadServiceProvider[CustomFunctionProvider]() match {
       case Nil => FunctionProvider.EmptyFunctionProvider
-      case f :: Nil => {
+      case f :: Nil =>
         logger.info("Found custom function provider: {}", f)
         f
-      }
-      case fs => {
+      case fs =>
         logger.info("Found custom function providers: {}", fs)
-        new FunctionProvider.CompositeFunctionProvider(fs)
-      }
+        FunctionProvider.CompositeFunctionProvider(fs)
     }
   }
 
@@ -255,12 +218,11 @@ class DmnEngine(configuration: DmnEngine.Configuration =
       loader.iterator.asScala.toList
 
     } catch {
-      case t: Throwable => {
+      case t: Throwable =>
         logger.error(
           s"Failed to load service provider: ${classTag[T].runtimeClass.getSimpleName}",
           t)
         List.empty
-      }
     }
   }
 

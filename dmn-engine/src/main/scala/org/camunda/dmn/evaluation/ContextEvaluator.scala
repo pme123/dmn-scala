@@ -1,19 +1,11 @@
 package org.camunda.dmn.evaluation
 
-import scala.collection.JavaConverters._
-
+import org.camunda.dmn.Audit.ContextEvaluationResult
 import org.camunda.dmn.DmnEngine._
 import org.camunda.dmn.FunctionalHelper._
-import org.camunda.feel.FeelEngine
-import org.camunda.bpm.model.dmn.instance.{Context, ContextEntry, Expression}
 import org.camunda.dmn.parser.{ParsedContext, ParsedDecisionLogic}
-import org.camunda.feel.interpreter.{
-  Val,
-  ValContext,
-  ValFunction,
-  DefaultContext
-}
-import org.camunda.dmn.Audit.ContextEvaluationResult
+import org.camunda.feel.interpreter.Context.StaticContext
+import org.camunda.feel.interpreter.{Val, ValContext, ValFunction}
 
 class ContextEvaluator(
     eval: (ParsedDecisionLogic, EvalContext) => Either[Failure, Val]) {
@@ -63,7 +55,7 @@ class ContextEvaluator(
 
         Right(
           ValContext(
-            DefaultContext(variables = results, functions = functions)))
+            StaticContext(variables = results, functions = functions)))
       }
   }
 

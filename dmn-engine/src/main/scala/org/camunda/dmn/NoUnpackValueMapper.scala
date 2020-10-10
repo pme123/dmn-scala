@@ -1,10 +1,8 @@
 package org.camunda.dmn
 
-import org.camunda.feel.spi.CustomValueMapper
-import org.camunda.feel.interpreter.ValueMapper
-import org.camunda.feel.interpreter.Val
+import org.camunda.feel.interpreter.{Val, ValueMapper}
 
-class NoUnpackValueMapper(valueMapper: ValueMapper) extends CustomValueMapper {
+class NoUnpackValueMapper(valueMapper: ValueMapper) extends ValueMapper {
 
   override def toVal(x: Any): Val = valueMapper.toVal(x)
 
