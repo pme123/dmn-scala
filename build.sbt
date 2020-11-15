@@ -1,6 +1,6 @@
 val shared = Seq(
   organization := "org.camunda.bpm.extension.dmn.scala",
-  version := "1.4.0-SNAPSHOT",
+  version := "1.6.0-SNAPSHOT",
   scalaVersion := "2.13.3",
   resolvers += Resolver.mavenLocal,
   resolvers += Classpaths.typesafeReleases,

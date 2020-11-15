@@ -5,21 +5,24 @@ import org.camunda.dmn.DmnEngine._
 import org.camunda.dmn.FunctionalHelper._
 import org.camunda.dmn.parser.{ParsedContext, ParsedDecisionLogic}
 import org.camunda.feel.interpreter.Context.StaticContext
-import org.camunda.feel.interpreter.{Val, ValContext, ValFunction}
+import org.camunda.feel.interpreter.{Val, ValContext, ValError, ValFunction}
 
 class ContextEvaluator(
     eval: (ParsedDecisionLogic, EvalContext) => Either[Failure, Val]) {
 
   def eval(context: ParsedContext, ctx: EvalContext): Either[Failure, Val] = {
 
-    evalContextEntries(context.entries, ctx).right.flatMap(results =>
-      evalContextResult(context.aggregationEntry, results, ctx).right.map {
-        result =>
+    evalContextEntries(context.entries, ctx).flatMap(results =>
+      evalContextResult(context.aggregationEntry, results, ctx) match {
+        case r@Right(result) =>
           ctx.audit(context,
-                    ContextEvaluationResult(entries = results, result = result))
-
-          result
-    })
+            ContextEvaluationResult(entries = results, result = result))
+          r
+        case l@Left(failure) =>
+          ctx.audit(context,
+            ContextEvaluationResult(entries = results, result = ValError(failure.message)))
+          l
+      })
   }
 
   private def evalContextEntries(
@@ -32,7 +35,7 @@ class ContextEvaluator(
           // a context entry must be able to access the result of previous entries
           val context = ctx.copy(variables = ctx.variables ++ result)
 
-          eval(expr, context).right
+          eval(expr, context)
             .map(v => result + (name -> v))
       }
     )

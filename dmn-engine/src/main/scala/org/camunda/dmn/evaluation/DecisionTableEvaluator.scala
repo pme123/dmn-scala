@@ -16,35 +16,57 @@ class DecisionTableEvaluator(
            context: EvalContext): Either[Failure, Val] = {
     implicit val ctx: EvalContext = context
 
-    evalInputExpressions(decisionTable.inputs).flatMap { inputValues =>
-      checkRules(decisionTable.rules, inputValues)
-        .map(_.flatten)
-        .flatMap {
-          case Nil =>
-            applyDefaultOutputEntries(decisionTable.outputs).map {
-              result =>
-                audit(decisionTable, inputValues, Nil, result)
-            }
-          case rules if decisionTable.hitPolicy == HitPolicy.FIRST =>
-            val firstMatchedRule = List(rules.head)
+    evalInputExpressions(decisionTable.inputs) match {
+      case Left(failure) =>
+        audit(decisionTable, Nil, Nil, ValError(failure.message))
+        Left(failure)
+      case Right(inputValues) =>
+        (checkRules(decisionTable.rules, inputValues) match {
+          case Left(failure) =>
+            audit(decisionTable, inputValues, Nil, ValError(failure.message))
+            Left(failure)
+          case right =>
+            right
+        })
+          .map(_.flatten)
+          .flatMap {
+            case Nil =>
+              applyDefaultOutputEntries(decisionTable.outputs) match {
+                case r@Right(result) =>
+                  audit(decisionTable, inputValues, Nil, result)
+                  r
+                case l@Left(failure) =>
+                  audit(decisionTable, inputValues, Nil, ValError(failure.message))
+                  l
+              }
+            case rules if decisionTable.hitPolicy == HitPolicy.FIRST =>
+              val firstMatchedRule = List(rules.head)
 
-            evalOutputValues(firstMatchedRule).flatMap { values =>
-              applyHitPolicy(decisionTable, values.map(_.toMap)).map {
-                result =>
-                  audit(decisionTable,
-                    inputValues,
-                    firstMatchedRule.zip(values),
-                    result)
+              evalOutputValues(firstMatchedRule).flatMap { values =>
+                applyHitPolicy(decisionTable, values.map(_.toMap)) match {
+                  case r@Right(result) =>
+                    audit(decisionTable,
+                      inputValues,
+                      firstMatchedRule.zip(values),
+                      result)
+                    r
+                  case l@Left(failure) =>
+                    audit(decisionTable, inputValues, rules.zip(values), ValError(failure.message))
+                    l
+                }
               }
-            }
-          case rules =>
-            evalOutputValues(rules).flatMap { values =>
-              applyHitPolicy(decisionTable, values.map(_.toMap)).map {
-                result =>
-                  audit(decisionTable, inputValues, rules.zip(values), result)
+            case rules =>
+              evalOutputValues(rules).flatMap { values =>
+                applyHitPolicy(decisionTable, values.map(_.toMap)) match {
+                  case r@Right(result) =>
+                    audit(decisionTable, inputValues, rules.zip(values), result)
+                    r
+                  case l@Left(failure) =>
+                    audit(decisionTable, inputValues, rules.zip(values), ValError(failure.message))
+                    l
+                }
               }
-            }
-        }
+          }
     }
   }
 

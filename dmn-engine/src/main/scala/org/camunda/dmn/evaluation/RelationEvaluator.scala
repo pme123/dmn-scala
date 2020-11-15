@@ -5,10 +5,10 @@ import org.camunda.dmn.DmnEngine._
 import org.camunda.dmn.FunctionalHelper._
 import org.camunda.dmn.parser.{ParsedDecisionLogic, ParsedRelation, ParsedRelationRow}
 import org.camunda.feel.interpreter.Context.StaticContext
-import org.camunda.feel.interpreter.{Val, ValContext, ValList}
+import org.camunda.feel.interpreter.{Val, ValContext, ValError, ValList}
 
 class RelationEvaluator(
-    eval: (ParsedDecisionLogic, EvalContext) => Either[Failure, Val]) {
+                         eval: (ParsedDecisionLogic, EvalContext) => Either[Failure, Val]) {
 
   def eval(relation: ParsedRelation,
            context: EvalContext): Either[Failure, Val] = {
@@ -19,21 +19,22 @@ class RelationEvaluator(
         val columns =
           mapEither[(String, ParsedDecisionLogic), (String, Val)](row.columns, {
             case (column, expr) =>
-              eval(expr, context).right
+              eval(expr, context)
                 .map(r => column -> r)
           })
 
-        columns.right.map(values => ValContext(StaticContext(values.toMap)))
+        columns.map(values => ValContext(StaticContext(values.toMap)))
       }
     )
 
-    rows.right
-      .map(ValList)
-      .map { result =>
+    rows.map(ValList) match {
+      case r@Right(result) =>
         context.audit(relation, SingleEvaluationResult(result))
-
-        result
-      }
+        r
+      case l@Left(failure) =>
+        context.audit(relation, SingleEvaluationResult(ValError(failure.message)))
+        l
+    }
   }
 
 }

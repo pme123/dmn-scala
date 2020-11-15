@@ -155,16 +155,15 @@ class DmnEngine(configuration: DmnEngine.Configuration =
                             context: EvalContext): Either[Failure, EvalResult] = {
     decisionEval
       .eval(decision, context)
-      .map(result => {
+      .map {
+        case ValNull => NilResult
+        case result => Result(valueMapper.unpackVal(result))
+      } match {
+      case anyResult =>
         val log = AuditLog(context.dmn, context.auditLog.toList)
-
         auditLogListeners.foreach(_.onEval(log))
-
-        result match {
-          case ValNull => NilResult
-          case result => Result(valueMapper.unpackVal(result))
-        }
-      })
+        anyResult
+    }
   }
 
   private def evalExpression(expression: ParsedDecisionLogic,

@@ -1,26 +1,10 @@
 package org.camunda.dmn.evaluation
 
-import scala.collection.JavaConverters._
-
 import org.camunda.dmn.DmnEngine._
 import org.camunda.dmn.FunctionalHelper._
-import org.camunda.bpm.model.dmn.instance.{
-  FunctionDefinition,
-  FormalParameter,
-  Expression,
-  LiteralExpression
-}
-import org.camunda.feel.interpreter.{
-  ValFunction,
-  ValError,
-  DefaultValueMapper,
-  Val
-}
-import org.camunda.dmn.parser.{
-  ParsedLiteralExpression,
-  ParsedFunctionDefinition
-}
+import org.camunda.dmn.parser.ParsedFunctionDefinition
 import org.camunda.feel.ParsedExpression
+import org.camunda.feel.interpreter.{Val, ValError, ValFunction}
 
 class FunctionDefinitionEvaluator(
     eval: (ParsedExpression, EvalContext) => Either[Failure, Val]) {
@@ -38,7 +22,7 @@ class FunctionDefinitionEvaluator(
     ValFunction(
       params = parameterNames,
       invoke = args => {
-        val result = validateArguments(parameters, args, context).right.flatMap(
+        val result = validateArguments(parameters, args, context).flatMap(
           arguments =>
             eval(expression,
                  context.copy(variables = context.variables ++ arguments)))
@@ -59,7 +43,6 @@ class FunctionDefinitionEvaluator(
       case ((name, typeRef), arg) =>
         TypeChecker
           .isOfType(arg, typeRef)
-          .right
           .map(name -> _)
     })
   }
