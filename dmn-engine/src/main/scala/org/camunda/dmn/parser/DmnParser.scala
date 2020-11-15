@@ -4,25 +4,10 @@ import java.io.InputStream
 
 import org.camunda.bpm.model.dmn._
 import org.camunda.bpm.model.dmn.impl.DmnModelConstants
-import org.camunda.bpm.model.dmn.instance.{
-  BusinessKnowledgeModel,
-  Context,
-  Decision,
-  DecisionTable,
-  Expression,
-  FunctionDefinition,
-  Invocation,
-  LiteralExpression,
-  Relation,
-  UnaryTests,
-  Variable,
-  List => DmnList
-}
+import org.camunda.bpm.model.dmn.instance.{BusinessKnowledgeModel, Context, Decision, DecisionTable, Expression, FunctionDefinition, Invocation, LiteralExpression, Relation, UnaryTests, Variable, List => DmnList}
 import org.camunda.dmn.DmnEngine.{Configuration, Failure}
-import org.camunda.feel.impl.parser.FeelParser
-import org.camunda.feel.syntaxtree._
-import org.camunda.feel.impl.parser.FeelParser.{NoSuccess, Success}
-
+import org.camunda.feel.ParsedExpression
+import org.camunda.feel.parser.{ConstBool, ConstNull, FeelParser}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.Try
@@ -60,10 +45,9 @@ class DmnParser(configuration: Configuration,
   def parse(stream: InputStream): Either[Failure, ParsedDmn] = {
 
     Try(Dmn.readModelFromStream(stream)) match {
-      case scala.util.Success(model) => {
+      case scala.util.Success(model) =>
         parseModel(model).left.map(failures =>
           Failure(failures.map(_.message).mkString("\n")))
-      }
       case scala.util.Failure(e) => Left(Failure(s"Failed to parse DMN: $e"))
     }
   }

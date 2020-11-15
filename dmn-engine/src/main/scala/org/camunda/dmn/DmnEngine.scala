@@ -7,7 +7,6 @@ import org.camunda.dmn.Audit.{AuditLog, AuditLogEntry, AuditLogListener, Evaluat
 import org.camunda.dmn.evaluation._
 import org.camunda.dmn.parser._
 import org.camunda.feel.FeelEngine
-import org.camunda.feel.interpreter.ValueMapper.CompositeValueMapper
 import org.camunda.feel.interpreter.{FunctionProvider, Val, ValNull, ValueMapper}
 import org.camunda.feel.spi.{CustomFunctionProvider, CustomValueMapper}
 
@@ -220,24 +219,20 @@ class DmnEngine(configuration: DmnEngine.Configuration =
   private def loadValueMapper(): ValueMapper = {
     loadServiceProvider[CustomValueMapper]() match {
       case Nil => FeelEngine.defaultValueMapper
-      case m :: Nil => {
+      case m :: Nil =>
         ValueMapper.CompositeValueMapper(List(m))
-      }
-      case mappers => {
+      case mappers =>
         ValueMapper.CompositeValueMapper(mappers)
-      }
     }
   }
 
   private def loadFunctionProvider(): FunctionProvider = {
     loadServiceProvider[CustomFunctionProvider]() match {
       case Nil => FunctionProvider.EmptyFunctionProvider
-      case f :: Nil => {
+      case f :: Nil =>
         FunctionProvider.CompositeFunctionProvider(List(f))
-      }
-      case fs => {
+      case fs =>
         FunctionProvider.CompositeFunctionProvider(fs)
-      }
     }
   }
 

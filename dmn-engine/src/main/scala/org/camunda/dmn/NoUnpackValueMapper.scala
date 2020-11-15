@@ -1,7 +1,7 @@
 package org.camunda.dmn
 
 import org.camunda.feel.interpreter.{Val, ValueMapper}
-import org.camunda.feel.valuemapper.{CustomValueMapper, ValueMapper}
+import org.camunda.feel.spi.CustomValueMapper
 
 class NoUnpackValueMapper(valueMapper: ValueMapper) extends CustomValueMapper {
 

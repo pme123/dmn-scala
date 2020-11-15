@@ -1,7 +1,7 @@
 package org.camunda.dmn
 
 import org.camunda.dmn.parser._
-import org.camunda.feel.syntaxtree.Val
+import org.camunda.feel.interpreter.Val
 
 object Audit {
 
