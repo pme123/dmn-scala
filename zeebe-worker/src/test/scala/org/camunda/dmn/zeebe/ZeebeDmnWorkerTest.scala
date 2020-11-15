@@ -1,4 +1,4 @@
-package org.camunda.dmn.zeebe
+package org.camunda.dmn.standalone
 
 import java.nio.file.Paths
 

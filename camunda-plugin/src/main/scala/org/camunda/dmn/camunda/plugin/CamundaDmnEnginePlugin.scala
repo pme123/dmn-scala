@@ -1,7 +1,10 @@
 package org.camunda.dmn.camunda.plugin
 
 import org.camunda.bpm.engine.ProcessEngineException
-import org.camunda.bpm.engine.impl.cfg.{AbstractProcessEnginePlugin, ProcessEngineConfigurationImpl}
+import org.camunda.bpm.engine.impl.cfg.{
+  AbstractProcessEnginePlugin,
+  ProcessEngineConfigurationImpl
+}
 import org.camunda.bpm.engine.impl.history.parser.HistoryDecisionEvaluationListener
 import org.camunda.dmn.DmnEngine
 

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.camunda.bpm.extension.dmn.scala</groupId>
     <artifactId>dmn-scala-root</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.5.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>dmn-engine-rest</artifactId>
@@ -17,32 +17,32 @@
       <groupId>org.camunda.bpm.extension.dmn.scala</groupId>
       <artifactId>dmn-engine-standalone</artifactId>
     </dependency>
-    
+
     <dependency>
-	    <groupId>org.scalatra</groupId>
-	    <artifactId>scalatra_2.12</artifactId>
-	</dependency>
-	
-	<dependency>
-	    <groupId>org.scalatra</groupId>
-	    <artifactId>scalatra-json_2.12</artifactId>
-	</dependency>
-	
-	<dependency>
-	    <groupId>org.json4s</groupId>
-	    <artifactId>json4s-jackson_2.12</artifactId>
-	</dependency>
-	
-	<dependency>
-		<groupId>javax.servlet</groupId>
-	    <artifactId>javax.servlet-api</artifactId>
-	</dependency>
-	
-	<dependency>
-		<groupId>org.eclipse.jetty</groupId>
-	    <artifactId>jetty-webapp</artifactId>
-	</dependency>
-    
+      <groupId>org.scalatra</groupId>
+      <artifactId>scalatra_2.13</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scalatra</groupId>
+      <artifactId>scalatra-json_2.13</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.json4s</groupId>
+      <artifactId>json4s-jackson_2.13</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -62,19 +62,25 @@
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-slf4j-impl</artifactId>
     </dependency>
-    	
-	<dependency>
-	    <groupId>org.scalatra</groupId>
-	    <artifactId>scalatra-scalatest_2.12</artifactId>
-	    <scope>test</scope>
-	</dependency>
+
+    <dependency>
+      <groupId>org.scalatra</groupId>
+      <artifactId>scalatra-scalatest_2.13</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.12</artifactId>
+      <artifactId>scalatest_2.13</artifactId>
       <scope>test</scope>
     </dependency>
-    
+
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest-flatspec_2.13</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>

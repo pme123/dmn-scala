@@ -4,6 +4,12 @@ import org.camunda.dmn.DmnEngine._
 import org.camunda.dmn.FunctionalHelper._
 import org.camunda.dmn.parser.{ParsedBusinessKnowledgeModel, ParsedDecisionLogic}
 import org.camunda.feel.interpreter.{Val, ValError, ValFunction, ValueMapper}
+import org.camunda.dmn.parser.{
+  ParsedBusinessKnowledgeModel,
+  ParsedDecisionLogic
+}
+import org.camunda.feel.syntaxtree.{Val, ValError, ValFunction}
+import org.camunda.feel.valuemapper.ValueMapper
 
 class BusinessKnowledgeEvaluator(
     eval: (ParsedDecisionLogic, EvalContext) => Either[Failure, Val],

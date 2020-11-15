@@ -170,7 +170,9 @@ class CamundaDmnHistoryListener(listener: () => DmnDecisionEvaluationListener)
     evalEvent
   }
 
-  val valueMapper = new CamundaValueMapper
+  val valueMapper = CompositeValueMapper(
+    List(DefaultValueMapper.instance, new JavaValueMapper())
+  )
 
   private def toTypedValue(value: Val): TypedValue =
     valueMapper.unpackVal(value, _ => value) match {

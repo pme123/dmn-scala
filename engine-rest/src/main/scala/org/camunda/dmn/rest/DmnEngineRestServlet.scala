@@ -51,15 +51,18 @@ class DmnEngineRestServlet(engine: StandaloneEngine)
   }
 
   post("/decisions") {
-    val result = fileMultiParams.toMap.map {
-      case (name: String, file: FileItem) =>
-        engine
-          .insertDecisions(file.getInputStream, name)
-          .map(_.map(decisionDto))
-    }
+    val result = fileMultiParams.iterator.flatMap {
+      case (name: String, files: Seq[FileItem]) => {
+        files.map { file =>
+          engine
+            .insertDecisions(file.getInputStream, file.name)
+            .map(_.map(decisionDto))
+        }
+      }
+    }.toList
 
-    val deployedDecisions = result.filter(_.isRight).flatMap(_.toSeq.flatten)
-    val failures = result.filter(_.isLeft).flatMap(_.left.toSeq)
+    val deployedDecisions = result.filter(_.isRight).flatMap(_.right.get)
+    val failures = result.filter(_.isLeft).map(_.left.get)
 
     DeploymentResult(deployedDecisions, failures)
   }

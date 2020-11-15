@@ -51,6 +51,38 @@ object DmnEngine {
   case class Configuration(escapeNamesWithSpaces: Boolean = false,
                            escapeNamesWithDashes: Boolean = false)
 
+  class Builder {
+
+    private var escapeNamesWithSpaces_ = false
+    private var escapeNamesWithDashes_ = false
+    private var auditLogListeners_ = List[AuditLogListener]().toBuffer
+
+    def escapeNamesWithSpaces(enabled: Boolean): Builder = {
+      escapeNamesWithSpaces_ = enabled
+      this
+    }
+
+    def escapeNamesWithDashes(enabled: Boolean): Builder = {
+      escapeNamesWithDashes_ = enabled
+      this
+    }
+
+    def addAuditListener(listener: AuditLogListener): Builder = {
+      auditLogListeners_ += listener
+      this
+    }
+
+    def build: DmnEngine =
+      new DmnEngine(
+        configuration = DmnEngine.Configuration(escapeNamesWithSpaces =
+                                                  escapeNamesWithSpaces_,
+                                                escapeNamesWithDashes =
+                                                  escapeNamesWithDashes_),
+        auditLogListeners = auditLogListeners_.toList
+      )
+
+  }
+
 }
 
 class DmnEngine(configuration: DmnEngine.Configuration =
@@ -61,8 +93,10 @@ class DmnEngine(configuration: DmnEngine.Configuration =
 
   val valueMapper: ValueMapper = loadValueMapper()
 
-  val feelEngine = new FeelEngine(functionProvider = loadFunctionProvider(),
-    valueMapper = new NoUnpackValueMapper(valueMapper))
+  val feelEngine = new FeelEngine(
+    functionProvider = loadFunctionProvider(),
+    valueMapper = ValueMapper.CompositeValueMapper(
+      List(new NoUnpackValueMapper(valueMapper))))
 
   val parser = new DmnParser(
     configuration = configuration,
@@ -185,27 +219,25 @@ class DmnEngine(configuration: DmnEngine.Configuration =
 
   private def loadValueMapper(): ValueMapper = {
     loadServiceProvider[CustomValueMapper]() match {
-      case Nil => ValueMapper.defaultValueMapper
-      case m :: Nil =>
-        logger.info("Found custom value mapper: {}", m)
-        CompositeValueMapper(List(m))
-      case mappers =>
-        logger.warn(
-          "Found more than one custom value mapper: {}. Use the first one.",
-          mappers)
-        CompositeValueMapper(mappers)
+      case Nil => FeelEngine.defaultValueMapper
+      case m :: Nil => {
+        ValueMapper.CompositeValueMapper(List(m))
+      }
+      case mappers => {
+        ValueMapper.CompositeValueMapper(mappers)
+      }
     }
   }
 
   private def loadFunctionProvider(): FunctionProvider = {
     loadServiceProvider[CustomFunctionProvider]() match {
       case Nil => FunctionProvider.EmptyFunctionProvider
-      case f :: Nil =>
-        logger.info("Found custom function provider: {}", f)
-        f
-      case fs =>
-        logger.info("Found custom function providers: {}", fs)
+      case f :: Nil => {
+        FunctionProvider.CompositeFunctionProvider(List(f))
+      }
+      case fs => {
         FunctionProvider.CompositeFunctionProvider(fs)
+      }
     }
   }
 

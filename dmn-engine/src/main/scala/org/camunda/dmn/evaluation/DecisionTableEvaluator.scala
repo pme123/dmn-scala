@@ -104,8 +104,9 @@ class DecisionTableEvaluator(
   }
 
   private def evalInputEntry(entry: ParsedExpression, inputValue: Val)(
-    implicit
-    context: EvalContext): Either[Failure, Val] = {
+      implicit
+      context: EvalContext): Either[Failure, Val] = {
+
     val variablesWithInput = context.variables + (FeelEngine.UnaryTests.defaultInputVariable -> inputValue)
 
     eval(entry, context.copy(variables = variablesWithInput))
@@ -222,9 +223,9 @@ class DecisionTableEvaluator(
 
   private def multipleOutputValues(values: List[Map[String, Val]]): Val =
     values match {
-      case Nil => ValNull
-      case list if list.head.size == 1 => ValList(list.map(_.values.head))
-      case list => ValList(list.map(m => ValContext(StaticContext(m))))
+      case Nil                           => ValNull
+      case list if (list.head.size == 1) => ValList(list.map(_.values.head))
+      case list                          => ValList(list.map(m => ValContext(StaticContext(m))))
     }
 
   private def sortByPriority(

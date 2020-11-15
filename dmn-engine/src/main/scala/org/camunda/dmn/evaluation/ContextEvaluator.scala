@@ -57,8 +57,7 @@ class ContextEvaluator(
           .map { case (k, f) => k -> List(f.asInstanceOf[ValFunction]) }
 
         Right(
-          ValContext(
-            StaticContext(variables = results, functions = functions)))
+          ValContext(StaticContext(variables = results, functions = functions)))
       }
   }
 
